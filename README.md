@@ -101,7 +101,23 @@ src/Phoenix4041/DoubleEnderChest/
 ### Design Principles
 * **Single Responsibility**: the listener only reacts to events, the menu only builds the GUI, the repository only owns persistence.
 * **Dependency Injection**: the repository is constructed once in `Loader` and injected into the listener; no service-locator chains.
-* **Type Safety**: `declare(strict_types=1)` everywhere, typed properties, typed array docblocks, PHPStan level 8 clean.
+* **Type Safety**: `declare(strict_types=1)` everywhere, typed properties, typed array docblocks.
+
+---
+
+## Static Analysis
+
+Verified against real PocketMine-MP 5.44.3 and InvMenu 4.7.4 sources, not stubs guessed from memory.
+
+```bash
+composer install
+vendor/bin/phpstan analyse
+```
+
+* `phpstan.neon` runs **level 9** (the highest level PHPStan 1.x offers) with `vendor/pocketmine/pocketmine-mp/src` and `vendor/muqsit/invmenu/src` scanned as dependency sources.
+* Result: **0 errors at level 8 and level 9**, zero `@phpstan-ignore` suppressions.
+* One real class of bug was caught and fixed by this: `SQLite3::prepare()` returns `SQLite3Stmt|false`, and the initial implementation used the result without checking for `false`. All three async tasks now validate it and raise a `RuntimeException` (caught by the surrounding `try/catch(\Throwable)`) instead of silently calling a method on `false`.
+* `composer.json` is dev-tooling only (PHPStan + stubs) — it is not required to run the plugin; Poggit builds the `.phar` straight from `src/` + `plugin.yml` + `.poggit.yml`.
 
 ---
 
@@ -112,6 +128,10 @@ The player interacted before their async load finished (extremely rare, only pos
 
 ### The chest says "blocked"
 Matches vanilla behavior: there must be no solid block directly above the ender chest.
+
+### Known Limitations (v1.0.0)
+* **No automatic migration**: if the plugin is installed on a server where players already had items in their vanilla 27-slot ender chest, those items stay in the player's vanilla `EnderInventory` NBT — they are not copied into the new 54-slot storage and are inaccessible from the in-game UI while this plugin is enabled. A one-time migration step is planned for v2.0 (see below).
+* **Single server only**: the SQLite backend is local to one server process. On a proxied network (Waterdog PE, etc.) with multiple PM5 backends, each server keeps its own independent ender chest contents until the planned MySQL backend ships.
 
 ---
 
@@ -153,8 +173,12 @@ For issues, feature requests, or questions:
 * Zero blocking I/O, zero repeating tasks, cache-first architecture.
 
 ### Planned Features (v2.0.0+)
-- [ ] Configurable inventory size per permission group.
-- [ ] Optional MySQL backend for multi-server networks.
+- [ ] Configurable inventory size per permission group (`config.yml`, e.g. VIP gets 6 rows, default gets 3).
+- [ ] Optional MySQL backend for multi-server networks sharing the same ender chest across a proxy.
+- [ ] One-time migration of a player's existing vanilla 27-slot `EnderInventory` contents into the new storage on their first interaction after upgrading.
+- [ ] Optional per-world ender chest separation (toggle between one global chest and one chest per world).
+- [ ] Staff moderation command (`/enderchest view <player>`, dedicated permission) to inspect another player's ender chest, read-only by default.
+- [ ] Configurable inventory title, open/close messages and sounds via `config.yml`.
 
 ---
 

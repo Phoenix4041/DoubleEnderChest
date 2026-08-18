@@ -32,6 +32,9 @@ final class SaveAllInventoriesTask extends AsyncTask{
 				"INSERT INTO enderchests (uuid, data, updated_at) VALUES (:uuid, :data, :updated_at)
 				ON CONFLICT(uuid) DO UPDATE SET data = :data, updated_at = :updated_at"
 			);
+			if($stmt === false){
+				throw new \RuntimeException("Failed to prepare UPSERT statement: " . $db->lastErrorMsg());
+			}
 			foreach($this->entries as $uuid => $data){
 				$stmt->bindValue(":uuid", $uuid, SQLITE3_TEXT);
 				$stmt->bindValue(":data", $data, SQLITE3_BLOB);

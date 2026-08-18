@@ -1,0 +1,7 @@
+parameters:
+	level: 9
+	paths:
+		- src
+	scanDirectories:
+		- vendor/pocketmine/pocketmine-mp/src
+		- vendor/muqsit/invmenu/src

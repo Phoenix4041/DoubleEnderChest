@@ -22,8 +22,15 @@ final class LoadInventoryTask extends AsyncTask{
 		try{
 			$db = new \SQLite3($this->databasePath, SQLITE3_OPEN_READONLY);
 			$stmt = $db->prepare("SELECT data FROM enderchests WHERE uuid = :uuid");
+			if($stmt === false){
+				throw new \RuntimeException("Failed to prepare SELECT statement: " . $db->lastErrorMsg());
+			}
 			$stmt->bindValue(":uuid", $this->uuid, SQLITE3_TEXT);
-			$row = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
+			$result = $stmt->execute();
+			if($result === false){
+				throw new \RuntimeException("Failed to execute SELECT statement: " . $db->lastErrorMsg());
+			}
+			$row = $result->fetchArray(SQLITE3_ASSOC);
 			$stmt->close();
 			$db->close();
 			$this->blob = $row !== false ? $row["data"] : null;
