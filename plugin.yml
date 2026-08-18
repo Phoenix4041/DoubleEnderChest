@@ -1,0 +1,13 @@
+name: DoubleEnderChest
+version: 1.0.0
+main: Phoenix4041\DoubleEnderChest\Loader
+api: ["5.0.0"]
+authors:
+  - Phoenix4041
+description: Replaces the vanilla ender chest with a 54-slot double-sized ender chest, persisted per player.
+load: POSTWORLD
+
+permissions:
+  doubleenderchest.use:
+    description: Allows opening the double ender chest
+    default: true

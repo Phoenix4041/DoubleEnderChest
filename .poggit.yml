@@ -1,0 +1,5 @@
+projects:
+  DoubleEnderChest:
+    path: ""
+    virions:
+      - Muqsit/InvMenu/InvMenu
