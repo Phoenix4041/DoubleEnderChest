@@ -11,21 +11,36 @@ final class SaveAllInventoriesTask extends AsyncTask{
 
 	private ?string $error = null;
 
+	private readonly string $serializedEntries;
+
 	/**
 	 * @param array<string, string> $entries uuid => nbt blob
 	 */
 	public function __construct(
 		private readonly string $databasePath,
-		private readonly array $entries,
+		array $entries,
 		private readonly int $updatedAt
 	){
+		// AsyncTask properties must be thread-safe; a plain array isn't, so it crosses
+		// the thread boundary as an igbinary-serialized string and is restored in onRun().
+		if(count($entries) === 0){
+			$this->serializedEntries = "";
+		}else{
+			$serialized = igbinary_serialize($entries);
+			if($serialized === null){
+				throw new \RuntimeException("Failed to serialize ender chest batch for async transfer");
+			}
+			$this->serializedEntries = $serialized;
+		}
 	}
 
 	public function onRun() : void{
-		if(count($this->entries) === 0){
+		if($this->serializedEntries === ""){
 			return;
 		}
 		try{
+			/** @var array<string, string> $entries */
+			$entries = igbinary_unserialize($this->serializedEntries);
 			$db = new \SQLite3($this->databasePath);
 			$db->exec("BEGIN");
 			$stmt = $db->prepare(
@@ -35,7 +50,7 @@ final class SaveAllInventoriesTask extends AsyncTask{
 			if($stmt === false){
 				throw new \RuntimeException("Failed to prepare UPSERT statement: " . $db->lastErrorMsg());
 			}
-			foreach($this->entries as $uuid => $data){
+			foreach($entries as $uuid => $data){
 				$stmt->bindValue(":uuid", $uuid, SQLITE3_TEXT);
 				$stmt->bindValue(":data", $data, SQLITE3_BLOB);
 				$stmt->bindValue(":updated_at", $this->updatedAt, SQLITE3_INTEGER);
